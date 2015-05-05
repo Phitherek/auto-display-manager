@@ -1,0 +1,101 @@
+#!/usr/bin/env ruby
+
+require './config'
+require './state'
+puts "AutoDisplayManager v. 0.1 (C) 2015 by Phitherek_"
+puts
+if ARGV.count < 1
+    puts "Usage: #{$0} <start|kill|status|pause|resume>"
+else
+    basepath = ENV["HOME"]
+    basepath += "/.auto-display-manager"
+    case ARGV[0].downcase
+    when "start"
+        puts "Starting AutoDisplayManager..."
+        s = AutoDisplayManager::State.new(basepath)
+        s.run
+        s.save
+        pid = fork do
+            basepath = ENV["HOME"]
+            basepath += "/.auto-display-manager"
+            s = AutoDisplayManager::State.load_from(basepath)
+            c = AutoDisplayManager::Config.new(basepath)
+            c.displays.each do |d|
+                if d != :main
+                    system("xrandr --output #{c.send(d)[:str]} --off")
+                    s.set(d, :disconnected)
+                end
+            end
+            s.set(:main, :connected)
+            s.save
+            loop do
+                s.reset
+                c.reset
+                if s.process == :running
+                    c.displays.each do |d|
+                        statestr = IO.popen("xrandr | grep '\\b#{c.send(d)[:str]}\\b'") do |xrandr_io|
+                            xrandr_io.read
+                        end
+                        if statestr[c.send(d)[:str].length+1..c.send(d)[:str].length+9] == "connected"
+                            if s.send(d) == :disconnected
+                                system("xrandr --output #{c.send(d)[:str]} #{c.send(d)[:options]}")
+                            end
+                            s.set(d, :connected)
+                        elsif statestr[c.send(d)[:str].length+1..c.send(d)[:str].length+9] == "disconnec"
+                            if s.send(d) == :connected
+                                system("xrandr --output #{c.send(d)[:str]} --off")
+                            end
+                            s.set(d, :disconnected)
+                        end
+                    end
+                    s.save
+                end
+                sleep 5
+            end
+        end
+        Process.detach(pid)
+        pidpath = basepath + "/autodm.pid"
+        File.open(pidpath, "w") do |f|
+           f << pid.to_s
+        end
+        puts "AutoDisplayManager started!"
+    when "kill"
+        pid = -1
+        pidpath = basepath + "/autodm.pid"
+        if File.exists?(pidpath)
+            File.open(pidpath, "r") do |f|
+               pid = f.read.to_i
+           end
+        else
+            puts "AutoDisplayManager is not running!"
+        end
+        if pid == -1
+            puts "Pid file error!"
+        else
+            s = AutoDisplayManager::State.load_from(basepath)
+            s.kill
+            Process.kill("SIGTERM", pid)
+            puts "AutoDisplayManager killed!"
+        end
+    when "status"
+        s = AutoDisplayManager::State.load_from(basepath)
+        state = "not running"
+        begin
+            state = s.process.to_s
+        rescue NoMethodError => e
+        end
+        puts "AutoDisplayManager is #{state}"
+    when "pause"
+        s = AutoDisplayManager::State.load_from(basepath)
+        s.pause
+        s.save
+        puts "AutoDisplayManager paused!"
+    when "resume"
+        s = AutoDisplayManager::State.load_from(basepath)
+        s.run
+        s.save
+        puts "AutoDisplayManager resumed!"
+    else
+        puts "Usage: #{$0} <start|kill|status|pause|resume>"
+    end
+end
