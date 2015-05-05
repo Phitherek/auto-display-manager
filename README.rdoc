@@ -1,0 +1,5 @@
+= auto-display-manager
+
+A Ruby script for automatic management of multiple screens (displays) using XRandR. For user documentation refer to GitHub Wiki of this project. You can also contact me directly at phitherek [at] gmail [dot] com. Issues and pull requests are welcome.
+
+Enjoy!
