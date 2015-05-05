@@ -1,0 +1,62 @@
+#!/usr/bin/env ruby
+
+require './config'
+puts "AutoDisplayManager Configurator v. 0.1 (C) 2015 by Phitherek_"
+puts
+homepath = ENV["HOME"]
+config = AutoDisplayManager::Config.new("#{homepath}/.auto-display-manager")
+if ARGV.count >= 1
+   if ARGV[0].downcase == "usage"
+       puts "Usage: #{$0} <command> [parameters]"
+       puts "See 'help' command for list of commands and parameters"
+       abort
+   elsif ARGV[0].downcase == "help"
+       puts "Usage: #{$0} <command> [parameters]"
+       puts
+       puts "Available commands: "
+       puts
+       puts "  * help - display this help message"
+       puts "  * usage - display the usage line"
+       puts "  * list - list the current configuration"
+       puts "  * set - set a display definition. Usage: set <name> <string> [xrandr_parameters]"
+       puts "  * unset - unset a display definition. Usage: unset <name>"
+       puts
+       abort
+   elsif ARGV[0].downcase == "list"
+       puts "Current configuration: "
+       config.display
+       abort
+   elsif ARGV[0].downcase == "set"
+       if ARGV.count < 3
+           puts "Usage: #{$0} set <name> <string> [xrandr_parameters]"
+           puts "See 'help' command for full list of commands and parameters"
+       else
+           name = ARGV[1].downcase.to_sym
+           string = ARGV[2]
+           params = ARGV[3..-1].join(" ")
+           config.set_display(name, string, params)
+           config.save
+           config.reset
+           puts "Done!"
+           puts "Current configuration: "
+           config.display
+       end
+       abort
+   elsif ARGV[0].downcase == "unset"
+       if ARGV.count < 2
+           puts "Usage: #{$0} unset <name>"
+           puts "See 'help' command for full list of commands and parameters"
+       else
+           name = ARGV[1].downcase.to_sym
+           config.remove_display(name)
+           config.save
+           config.reset
+           puts "Done!"
+           puts "Current configuration: "
+           config.display
+       end
+       abort
+   end
+end
+puts "Usage: #{$0} [command] [parameters]"
+puts "See 'help' command for list of commands and parameters"
