@@ -1,0 +1,2 @@
+#!/bin/bash
+cd AUTODM_PATH && RUBY_PATH ./autodm-config $@
