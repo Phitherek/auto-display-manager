@@ -2,7 +2,7 @@
 
 require './config'
 require './state'
-puts "AutoDisplayManager v. 0.1 (C) 2015 by Phitherek_"
+puts "AutoDisplayManager v. 1.0 (C) 2015-2017 by Phitherek_"
 puts
 if ARGV.count < 1
     puts "Usage: #{$0} <start|kill|status|pause|resume>"
@@ -20,9 +20,12 @@ else
             basepath += "/.auto-display-manager"
             s = AutoDisplayManager::State.load_from(basepath)
             c = AutoDisplayManager::Config.new(basepath)
-            c.displays.each do |d|
+            profile = c.selected_profile
+            profile ||= 'default'
+            displays = c.send(profile).keys
+            displays.each do |d|
                 if d != :main
-                    system("xrandr --output #{c.send(d)[:str]} --off")
+                    system("xrandr --output #{c.send(profile)[d][:str]} --off")
                     s.set(d, :disconnected)
                 end
             end
@@ -32,18 +35,32 @@ else
                 s.reset
                 c.reset
                 if s.process == :running
-                    c.displays.each do |d|
-                        statestr = IO.popen("xrandr | grep '\\b#{c.send(d)[:str]}\\b'") do |xrandr_io|
+                    old_profile = profile
+                    profile = c.selected_profile
+                    profile ||= 'default'
+                    if old_profile != nil && old_profile != profile
+                        c.displays.each do |d|
+                            if d != :main
+                                if c.send(old_profile).include?(d)
+                                    system("xrandr --output #{c.send(old_profile)[d][:str]} --off")
+                                    s.set(d, :disconnected)
+                                end
+                            end
+                        end
+                    end
+                    displays = c.send(profile).keys
+                    displays.each do |d|
+                        statestr = IO.popen("xrandr | grep '\\b#{c.send(profile)[d][:str]}\\b'") do |xrandr_io|
                             xrandr_io.read
                         end
-                        if statestr[c.send(d)[:str].length+1..c.send(d)[:str].length+9] == "connected"
+                        if statestr[c.send(profile)[d][:str].length+1..c.send(profile)[d][:str].length+9] == "connected"
                             if s.send(d) == :disconnected
-                                system("xrandr --output #{c.send(d)[:str]} #{c.send(d)[:options]}")
+                                system("xrandr --output #{c.send(profile)[d][:str]} #{c.send(profile)[d][:options]}")
                             end
                             s.set(d, :connected)
-                        elsif statestr[c.send(d)[:str].length+1..c.send(d)[:str].length+9] == "disconnec"
+                        elsif statestr[c.send(profile)[d][:str].length+1..c.send(profile)[d][:str].length+9] == "disconnec"
                             if s.send(d) == :connected
-                                system("xrandr --output #{c.send(d)[:str]} --off")
+                                system("xrandr --output #{c.send(profile)[d][:str]} --off")
                             end
                             s.set(d, :disconnected)
                         end
