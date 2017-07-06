@@ -2,7 +2,7 @@
 
 require './config'
 require './state'
-puts "AutoDisplayManager v. 1.0 (C) 2015-2017 by Phitherek_"
+puts "AutoDisplayManager v. 1.0.1 (C) 2015-2017 by Phitherek_"
 puts
 if ARGV.count < 1
     puts "Usage: #{$0} <start|kill|status|pause|resume>"

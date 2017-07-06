@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 
 require './config'
-puts "AutoDisplayManager Configurator v. 1.0 (C) 2015-2017 by Phitherek_"
+puts "AutoDisplayManager Configurator v. 1.0.1 (C) 2015-2017 by Phitherek_"
 puts
 homepath = ENV["HOME"]
 config = AutoDisplayManager::Config.new("#{homepath}/.auto-display-manager")
@@ -68,6 +68,7 @@ if ARGV.count >= 1
         config.switch_profile(profile)
         config.save
         config.reset
+        `notify-send -t 2000 -a autodm-config -c autodm-config 'AutoDisplayManager profile switched!' 'Switched to profile: #{config.selected_profile}'`
         puts "Done!"
         puts "Current configuration: "
         config.display(nil)
