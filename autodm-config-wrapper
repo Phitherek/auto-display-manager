@@ -1,2 +1,0 @@
-#!/bin/bash
-cd /home/phitherek/workspace/auto-display-manager && /home/phitherek/.rvm/wrappers/ruby-2.2.4/ruby ./autodm-config $@
